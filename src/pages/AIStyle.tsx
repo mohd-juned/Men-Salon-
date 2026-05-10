@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Sparkles, RefreshCw, Scissors, User, Zap, ChevronRight, Download } from 'lucide-react';
-import { analyzeFaceAndSuggestStyles, generateGroomedLook } from '../lib/gemini';
+import { Camera, Sparkles, RefreshCw, Scissors, User, Zap, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
 import { compressImage } from '../lib/utils';
@@ -45,22 +44,26 @@ export default function AIStyle() {
     setIsAnalyzing(true);
     setScanProgress(0);
     
-    // Smooth progress animation for visual "generation" effect
     const interval = setInterval(() => {
       setScanProgress(p => p < 98 ? p + 2 : p);
     }, 100);
 
     try {
-      const base64 = image.split(',')[1];
-      
-      // Parallel execution for faster result
-      const [analysisData, newLook] = await Promise.all([
-        analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
-        generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
-      ]);
+      const response = await fetch('/api/groom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: image.split(',')[1],
+          haircut: selectedHair,
+          beard: selectedBeard || 'Clean Shave'
+        })
+      });
 
-      setResults(analysisData);
-      setGroomedImage(newLook);
+      if (!response.ok) throw new Error('API Error');
+
+      const data = await response.json();
+      setResults(data.analysis);
+      setGroomedImage(data.groomedImage);
       toast.success('Style match identified!');
     } catch (error) {
       toast.error('AI mismatch. Try again.');
