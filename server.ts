@@ -6,8 +6,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-import { analyzeFaceAndSuggestStyles, generateGroomedLook } from "./src/lib/gemini.js";
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -18,34 +16,7 @@ async function startServer() {
   // JSON parsing with higher limit for image uploads
   app.use(express.json({ limit: '10mb' }));
 
-  // AI API Route (Secure Proxy)
-  app.post("/api/groom", async (req, res) => {
-    try {
-      const { imageBase64, haircut, beard } = req.body;
-      
-      if (!imageBase64) {
-        return res.status(400).json({ error: "Missing image" });
-      }
-
-      console.log(`Processing grooming: ${haircut} + ${beard}`);
-
-      // Run AI tasks
-      const [analysisData, newLook] = await Promise.all([
-        analyzeFaceAndSuggestStyles(imageBase64, haircut, beard || 'Clean Shave'),
-        generateGroomedLook(imageBase64, haircut, beard || 'Clean Shave')
-      ]);
-
-      res.json({
-        analysis: analysisData,
-        groomedImage: newLook
-      });
-    } catch (error) {
-      console.error("AI API Error:", error);
-      res.status(500).json({ error: "AI Processing Failed. Check server logs." });
-    }
-  });
-
-  // Vite middleware for development
+  // vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

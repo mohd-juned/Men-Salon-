@@ -50,27 +50,19 @@ export default function AIStyle() {
     }, 100);
 
     try {
-      const response = await fetch('/api/groom', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: image.split(',')[1],
-          haircut: selectedHair,
-          beard: selectedBeard || 'Clean Shave'
-        })
-      });
+      const base64 = image.split(',')[1];
+      
+      // Parallel execution for faster result
+      const [analysisData, newLook] = await Promise.all([
+        analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
+        generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
+      ]);
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Server Error');
-      }
-
-      const data = await response.json();
-      setResults(data.analysis);
-      setGroomedImage(data.groomedImage);
+      setResults(analysisData);
+      setGroomedImage(newLook);
       toast.success('Style match identified!');
     } catch (error: any) {
-      toast.error(error.message || 'AI mismatch. Try again.');
+      toast.error('AI mismatch. Try again.');
       console.error(error);
     } finally {
       clearInterval(interval);
