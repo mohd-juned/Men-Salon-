@@ -1,6 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined in environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 export async function analyzeFaceAndSuggestStyles(
   imageBase64: string, 
@@ -11,6 +22,7 @@ export async function analyzeFaceAndSuggestStyles(
   recommendedHair: string[];
   recommendedBeard: string[];
 }> {
+  const ai = getAI();
   const model = "gemini-3-flash-preview";
   
   const prompt = `
@@ -60,6 +72,7 @@ export async function generateGroomedLook(
   haircut: string,
   beard: string
 ): Promise<string> {
+  const ai = getAI();
   // Use gemini-2.5-flash-image for image editing/generation
   const model = "gemini-2.5-flash-image";
   
