@@ -27,11 +27,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: "GEMINI_API_KEY is not set on Vercel Dashboard" });
     }
 
-    console.log(`Vercel Grooming Task: ${haircut} - ${beard}`);
+    console.log(`Vercel Grooming Task Start: ${haircut} - ${beard}`);
 
-    // Run AI tasks sequentially if needed to avoid memory/timeout issues on Hobby plan
-    const analysisData = await analyzeFaceAndSuggestStyles(imageBase64, haircut, beard || 'Clean Shave');
-    const newLook = await generateGroomedLook(imageBase64, haircut, beard || 'Clean Shave');
+    // Parallel calls are essential to stay under 10s Vercel Hobby timeout
+    const [analysisData, newLook] = await Promise.all([
+      analyzeFaceAndSuggestStyles(imageBase64, haircut, beard || 'Clean Shave'),
+      generateGroomedLook(imageBase64, haircut, beard || 'Clean Shave')
+    ]);
+
+    console.log("Vercel Grooming Task Success");
 
     return res.status(200).json({
       analysis: analysisData,

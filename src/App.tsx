@@ -29,8 +29,8 @@ export default function App() {
       if (docSnap.exists()) {
         const data = docSnap.data() as SalonConfig;
         
-        // Force fix for the address glitch reported by user
-        if (data.address && (data.address.includes('Okhla') || data.address.includes('Pahasu 203396'))) {
+        // Final address fix for the salon owner
+        if (data.address && (data.address.includes('Okhla') || data.address.includes('Plot No. 123'))) {
           data.address = 'Main market Pahasu 200396';
         }
 
