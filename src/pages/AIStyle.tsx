@@ -78,10 +78,17 @@ export default function AIStyle() {
           })
         });
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({ error: 'AI Proxy failed' }));
-          throw new Error(errData.error || 'AI Processing Failed on Server');
+    if (!response.ok) {
+        const text = await response.text();
+        let errorMessage = 'AI Processing Failed';
+        try {
+          const json = JSON.parse(text);
+          errorMessage = json.error || errorMessage;
+        } catch (e) {
+          errorMessage = `Server Error (${response.status})`;
         }
+        throw new Error(errorMessage);
+      }
 
         const data = await response.json();
         analysisData = data.analysis;

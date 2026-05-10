@@ -10,7 +10,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { imageBase64, haircut, beard } = req.body;
     
     if (!imageBase64) {
-      return res.status(400).json({ error: "Missing image" });
+      return res.status(400).json({ error: "Missing image data" });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is not set in environment variables");
+      return res.status(500).json({ error: "GEMINI_API_KEY is missing on server" });
     }
 
     console.log(`Processing grooming on Vercel: ${haircut} + ${beard}`);
