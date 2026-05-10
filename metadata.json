@@ -1,0 +1,8 @@
+{
+  "name": "Shabnam Men's Salon",
+  "description": "Premium Men's Salon offering AI-powered hairstyle suggestions, easy bookings, and real-time status updates.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

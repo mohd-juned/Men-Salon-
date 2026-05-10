@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "Apppointment booking details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "date", "time", "status", "createdAt"]
+    },
+    "SalonConfig": {
+      "title": "Salon Configuration",
+      "description": "Metadata about the salon status and info",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["open", "closed"] },
+        "openingHours": { "type": "string" },
+        "address": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["status", "openingHours", "address"]
+    }
+  },
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Customer bookings"
+    },
+    "/salon/config": {
+      "schema": "SalonConfig",
+      "description": "Global salon configuration"
+    }
+  }
+}

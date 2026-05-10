@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      // Hardcoded admin email from user request metadata
+      return isSignedIn() && request.auth.token.email == 'md.junedphs@gmail.com' && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Booking Validation
+    function isValidBooking(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 15 &&
+             data.date is string && data.time is string &&
+             data.status in ['pending', 'accepted', 'rejected'];
+    }
+
+    match /bookings/{bookingId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(bookingId) && 
+                      request.resource.data.status == 'pending' &&
+                      isValidBooking(request.resource.data) &&
+                      request.resource.data.createdAt == request.time;
+      
+      allow update: if isAdmin() &&
+                      isValidBooking(request.resource.data) &&
+                      request.resource.data.updatedAt == request.time &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'updatedAt']);
+    }
+
+    match /salon/config {
+      allow read: if true; // Publicly accessible
+      allow write: if isAdmin();
+    }
+  }
+}
