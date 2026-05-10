@@ -28,6 +28,11 @@ export default function App() {
     const unsubscribeConfig = onSnapshot(doc(db, 'salon', 'config'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as SalonConfig;
+
+        // Cleanup old address if present in DB
+        if (data.address && (data.address.includes('Okhla') || data.address.includes('Plot No. 123'))) {
+          data.address = 'Main market Pahasu 200396';
+        }
         
         // Handle Auto Status logic
         if (data.autoStatus && data.openingHours) {
@@ -56,7 +61,7 @@ export default function App() {
         const defaultConfig: SalonConfig = {
           status: 'open',
           openingHours: '10:00 AM - 9:00 PM',
-          address: 'Main market Pahasu 203396',
+          address: 'Main market Pahasu 200396',
           phone: '+91 00000 00000',
           photoUrl: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop',
           gallery: []
@@ -65,6 +70,7 @@ export default function App() {
           ...defaultConfig,
           lastUpdated: serverTimestamp()
         }).catch(err => console.error("Initial config fail:", err));
+        setSalonConfig(defaultConfig);
       }
     });
 
