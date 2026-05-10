@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Camera, Sparkles, RefreshCw, Scissors, User, Zap, Download } from 'lucide-react';
+import { analyzeFaceAndSuggestStyles, generateGroomedLook } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
 import { compressImage } from '../lib/utils';
@@ -59,14 +60,17 @@ export default function AIStyle() {
         })
       });
 
-      if (!response.ok) throw new Error('API Error');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Server Error');
+      }
 
       const data = await response.json();
       setResults(data.analysis);
       setGroomedImage(data.groomedImage);
       toast.success('Style match identified!');
-    } catch (error) {
-      toast.error('AI mismatch. Try again.');
+    } catch (error: any) {
+      toast.error(error.message || 'AI mismatch. Try again.');
       console.error(error);
     } finally {
       clearInterval(interval);
