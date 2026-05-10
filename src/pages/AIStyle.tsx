@@ -50,24 +50,46 @@ export default function AIStyle() {
     }, 100);
 
     try {
-      const response = await fetch('/api/groom', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: image.split(',')[1],
-          haircut: selectedHair,
-          beard: selectedBeard || 'Clean Shave'
-        })
-      });
+      const base64 = image.split(',')[1];
+      
+      let analysisData;
+      let newLook;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'AI mismatch. Try again.' }));
-        throw new Error(errorData.error || 'Server Error');
+      // Detection: Use direct call in AI Studio Preview, proxy for external platforms
+      const isAIStudio = window.location.hostname.includes('asia-east1.run.app') || window.location.hostname.includes('localhost');
+
+      if (isAIStudio) {
+        // Direct call (uses keys injected by environment)
+        const [analysis, look] = await Promise.all([
+          analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
+          generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
+        ]);
+        analysisData = analysis;
+        newLook = look;
+      } else {
+        // External Proxy (uses server-side keys on Render/Railway)
+        const response = await fetch('/api/groom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: base64,
+            haircut: selectedHair,
+            beard: selectedBeard || 'Clean Shave'
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ error: 'AI Proxy failed' }));
+          throw new Error(errData.error || 'AI Processing Failed on Server');
+        }
+
+        const data = await response.json();
+        analysisData = data.analysis;
+        newLook = data.groomedImage;
       }
 
-      const data = await response.json();
-      setResults(data.analysis);
-      setGroomedImage(data.groomedImage);
+      setResults(analysisData);
+      setGroomedImage(newLook);
       toast.success('Style match identified!');
     } catch (error: any) {
       toast.error(error.message || 'AI mismatch. Try again.');

@@ -28,12 +28,12 @@ export default function App() {
     const unsubscribeConfig = onSnapshot(doc(db, 'salon', 'config'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as SalonConfig;
-
-        // Cleanup old address if present in DB
-        if (data.address && (data.address.includes('Okhla') || data.address.includes('Plot No. 123'))) {
+        
+        // Force fix for the address glitch reported by user
+        if (data.address && (data.address.includes('Okhla') || data.address.includes('Pahasu 203396'))) {
           data.address = 'Main market Pahasu 200396';
         }
-        
+
         // Handle Auto Status logic
         if (data.autoStatus && data.openingHours) {
           try {
