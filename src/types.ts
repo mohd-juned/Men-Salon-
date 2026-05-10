@@ -15,7 +15,9 @@ export interface SalonConfig {
   status: 'open' | 'closed';
   openingHours: string;
   address: string;
+  phone: string;
   photoUrl: string;
+  gallery?: string[];
   autoStatus?: boolean;
   lastUpdated?: any;
 }

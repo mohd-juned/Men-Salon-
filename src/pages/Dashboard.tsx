@@ -153,12 +153,61 @@ export default function Dashboard({ config, isAdmin }: { config: SalonConfig | n
 
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Studio Address</label>
-                  <textarea 
-                    value={editConfig?.address} 
+                  <input
+                    type="text"
+                    value={editConfig?.address || ''}
                     onChange={(e) => setEditConfig(prev => prev ? {...prev, address: e.target.value} : null)}
-                    rows={2}
-                    className="w-full bg-charcoal border border-white/10 p-3 rounded-xl text-sm focus:border-gold transition-colors resize-none"
+                    className="w-full bg-charcoal border border-white/10 p-3 rounded-xl text-sm focus:border-gold transition-colors"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Support Phone</label>
+                  <input 
+                    type="text" 
+                    value={editConfig?.phone || ''} 
+                    onChange={(e) => setEditConfig(prev => prev ? {...prev, phone: e.target.value} : null)}
+                    className="w-full bg-charcoal border border-white/10 p-3 rounded-xl text-sm focus:border-gold transition-colors"
+                    placeholder="e.g. +91 99999 99999"
+                  />
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <label className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Studio Gallery (4 Photos)</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[0, 1, 2, 3].map((index) => (
+                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden glass-card group bg-black/20">
+                        {editConfig?.gallery?.[index] ? (
+                          <img src={editConfig.gallery[index]} className="w-full h-full object-cover" alt={`Gallery ${index}`} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/10 italic text-[10px]">Empty</div>
+                        )}
+                        <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                          <Camera className="w-5 h-5 text-gold" />
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  const compressed = await compressImage(file, 600, 600, 0.6);
+                                  setEditConfig(prev => {
+                                    if (!prev) return null;
+                                    const newGallery = [...(prev.gallery || ['','','',''])];
+                                    newGallery[index] = compressed;
+                                    return { ...prev, gallery: newGallery };
+                                  });
+                                  toast.success("Gallery item updated");
+                                } catch (err) { toast.error("Upload failed"); }
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-white/5">

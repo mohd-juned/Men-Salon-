@@ -18,7 +18,7 @@ export default function Visit({ config }: { config: SalonConfig | null }) {
                 icon={<MapPin className="text-gold" />}
                 title="Location"
                 value={config?.address || "Address Loading..."}
-                subtitle="Okhla, New Delhi"
+                subtitle="Studio Headquarters"
               />
               <InfoItem 
                 icon={<Clock className="text-gold" />}
@@ -29,7 +29,7 @@ export default function Visit({ config }: { config: SalonConfig | null }) {
               <InfoItem 
                 icon={<Phone className="text-gold" />}
                 title="Phone"
-                value="+91 98765 43210"
+                value={config?.phone || "+91 98765 43210"}
                 subtitle="Call for instant inquiries"
               />
             </div>
@@ -79,10 +79,15 @@ export default function Visit({ config }: { config: SalonConfig | null }) {
            <div className="h-[1px] flex-1 bg-white/10" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => (
+          {(config?.gallery && config.gallery.length > 0 ? config.gallery : [
+            "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=300&h=300&auto=format&fit=crop&v=1",
+            "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=300&h=300&auto=format&fit=crop&v=2",
+            "https://images.unsplash.com/photo-1621605815841-db897c4733dd?q=80&w=300&h=300&auto=format&fit=crop&v=3",
+            "https://images.unsplash.com/photo-1593702295094-112583269386?q=80&w=300&h=300&auto=format&fit=crop&v=4"
+          ]).map((img, i) => (
             <div key={i} className="aspect-square glass-card overflow-hidden">
                <img 
-                src={`https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=300&h=300&auto=format&fit=crop&v=${i}`} 
+                src={img} 
                 alt="Style" 
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-grayscale duration-500"
                 referrerPolicy="no-referrer"

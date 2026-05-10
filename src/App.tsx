@@ -56,8 +56,10 @@ export default function App() {
         const defaultConfig: SalonConfig = {
           status: 'open',
           openingHours: '10:00 AM - 9:00 PM',
-          address: 'Plot No. 123, Street 5, Okhla, New Delhi',
+          address: 'Main market Pahasu 203396',
+          phone: '+91 00000 00000',
           photoUrl: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop',
+          gallery: []
         };
         setDoc(doc(db, 'salon', 'config'), {
           ...defaultConfig,
