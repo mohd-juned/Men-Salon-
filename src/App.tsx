@@ -30,7 +30,7 @@ export default function App() {
         const data = docSnap.data() as SalonConfig;
         
         // Final address fix for the salon owner
-        if (data.address && (data.address.includes('Okhla') || data.address.includes('Plot No. 123'))) {
+        if (data.address && (data.address.includes('Okhla') || data.address.includes('Pahasu 203396') || data.address.includes('Plot No. 123'))) {
           data.address = 'Main market Pahasu 200396';
         }
 

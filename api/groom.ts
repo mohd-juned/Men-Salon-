@@ -24,26 +24,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Check key before calling functions
     if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: "GEMINI_API_KEY is not set on Vercel Dashboard" });
+      console.error("CRITICAL: GEMINI_API_KEY is missing in environment variables.");
+      return res.status(500).json({ 
+        error: "GEMINI_API_KEY missing. Please add it to your Environment Variables on Vercel/Railway.",
+        code: "MISSING_KEY"
+      });
     }
 
-    console.log(`Vercel Grooming Task Start: ${haircut} - ${beard}`);
+    console.log(`Vercel Grooming Start: ${haircut} - ${beard}`);
 
-    // Parallel calls are essential to stay under 10s Vercel Hobby timeout
-    const [analysisData, newLook] = await Promise.all([
-      analyzeFaceAndSuggestStyles(imageBase64, haircut, beard || 'Clean Shave'),
-      generateGroomedLook(imageBase64, haircut, beard || 'Clean Shave')
-    ]);
+    // Run AI tasks sequentially to avoid Vercel Hobby 10s timeout / memory limit issues
+    const analysisData = await analyzeFaceAndSuggestStyles(imageBase64, haircut, beard || 'Clean Shave');
+    const newLook = await generateGroomedLook(imageBase64, haircut, beard || 'Clean Shave');
 
-    console.log("Vercel Grooming Task Success");
+    console.log("Vercel Grooming Success");
 
     return res.status(200).json({
       analysis: analysisData,
       groomedImage: newLook
     });
   } catch (error: any) {
-    console.error("Vercel AI Error:", error);
-    const message = error.message || "Unknown Server Error";
-    return res.status(500).json({ error: `Server Error: ${message}` });
+    console.error("Grooming Error:", error);
+    const message = error.message || "AI Service Timeout or Failure";
+    
+    // Check for specific Gemini errors
+    if (message.includes('API_KEY_INVALID')) {
+      return res.status(401).json({ error: "Invalid GEMINI_API_KEY. Please check your key." });
+    }
+    
+    return res.status(500).json({ error: `AI Failed: ${message}` });
   }
 }

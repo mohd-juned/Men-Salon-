@@ -55,19 +55,12 @@ export default function AIStyle() {
       let analysisData;
       let newLook;
 
-      // Detection: Use direct call in AI Studio Preview, proxy for external platforms
-      const isAIStudio = window.location.hostname.includes('asia-east1.run.app') || window.location.hostname.includes('localhost');
+      // Detection: Use Proxy for Vercel/External, Direct for AI Studio Preview
+      const isExternal = !window.location.hostname.includes('asia-east1.run.app') && 
+                         !window.location.hostname.includes('localhost');
 
-      if (isAIStudio) {
-        // Direct call (uses keys injected by environment)
-        const [analysis, look] = await Promise.all([
-          analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
-          generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
-        ]);
-        analysisData = analysis;
-        newLook = look;
-      } else {
-        // External Proxy (uses server-side keys on Render/Railway)
+      if (isExternal) {
+        // Vercel/Railway Proxy
         const response = await fetch('/api/groom', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -78,21 +71,26 @@ export default function AIStyle() {
           })
         });
 
-    if (!response.ok) {
-        const text = await response.text();
-        let errorMessage = 'AI Processing Failed';
-        try {
-          const json = JSON.parse(text);
-          errorMessage = json.error || errorMessage;
-        } catch (e) {
-          errorMessage = `Server Error (${response.status})`;
+        if (!response.ok) {
+          const json = await response.json().catch(() => ({}));
+          const errorMsg = json.error || `Server Error (${response.status})`;
+          if (errorMsg.includes('GEMINI_API_KEY')) {
+            throw new Error('Vercel Config Error: GEMINI_API_KEY is not set on your Vercel Dashboard.');
+          }
+          throw new Error(errorMsg);
         }
-        throw new Error(errorMessage);
-      }
 
         const data = await response.json();
         analysisData = data.analysis;
         newLook = data.groomedImage;
+      } else {
+        // Direct call (uses keys injected by AI Studio environment)
+        const [analysis, look] = await Promise.all([
+          analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
+          generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
+        ]);
+        analysisData = analysis;
+        newLook = look;
       }
 
       setResults(analysisData);
