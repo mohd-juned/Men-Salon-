@@ -57,6 +57,8 @@ export default function AIStyle() {
 
       // Detection: Use Proxy for Vercel/External, Direct for AI Studio Preview
       const isExternal = !window.location.hostname.includes('asia-east1.run.app') && 
+                         !window.location.hostname.includes('googleusercontent.com') &&
+                         !window.location.hostname.includes('webcontainer.io') &&
                          !window.location.hostname.includes('localhost');
 
       if (isExternal) {
@@ -72,8 +74,15 @@ export default function AIStyle() {
         });
 
         if (!response.ok) {
-          const json = await response.json().catch(() => ({}));
-          const errorMsg = json.error || `Server Error (${response.status})`;
+          let errorMsg = `Server Error (${response.status})`;
+          try {
+            const json = await response.json();
+            errorMsg = json.error || errorMsg;
+          } catch (e) {
+            // Not JSON (could be Vercel timeout page)
+            if (response.status === 504) errorMsg = "Vercel Timeout: Image too large or AI took too long. Try a smaller photo.";
+          }
+          
           if (errorMsg.includes('GEMINI_API_KEY')) {
             throw new Error('Vercel Config Error: GEMINI_API_KEY is not set on your Vercel Dashboard.');
           }

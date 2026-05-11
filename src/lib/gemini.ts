@@ -8,7 +8,7 @@ function getAI() {
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not set. If you are on Vercel, please add it to your Environment Variables.");
     }
-    aiInstance = new GoogleGenAI(apiKey);
+    aiInstance = new GoogleGenAI({ apiKey });
   }
   return aiInstance;
 }
@@ -42,16 +42,19 @@ export async function analyzeFaceAndSuggestStyles(
     },
   };
 
-  const response = await ai.models.generateContent({
+  const modelInstance = ai.getGenerativeModel({ 
     model,
-    contents: { parts: [imagePart, { text: prompt }] },
-    config: {
+    generationConfig: {
       responseMimeType: "application/json",
     }
   });
 
+  const result = await modelInstance.generateContent([prompt, imagePart]);
+  const response = await result.response;
+  const text = response.text();
+
   try {
-    const data = JSON.parse(response.text || "{}");
+    const data = JSON.parse(text || "{}");
     return {
       suggestions: data.analysis || "No analysis available.",
       recommendedHair: data.hairRecommendations || [],
@@ -72,38 +75,7 @@ export async function generateGroomedLook(
   haircut: string,
   beard: string
 ): Promise<string> {
-  const ai = getAI();
-  const model = "gemini-1.5-flash"; // Stable multimodal model
-  
-  const prompt = `
-    Analyze this photo. The user wants to see how they would look with a ${haircut} and ${beard}.
-    Since you are a text-based AI, you cannot modify the image directly.
-    However, describe the visual changes vividly.
-    
-    (Note to developer: Since Gemini 1.5 doesn't output images via SDK yet, 
-    we will simulate the result by returning the original image for the UI to show 
-    alongside your detailed text analysis).
-  `;
-
-  try {
-    const imagePart = {
-      inlineData: {
-        mimeType: "image/jpeg",
-        data: imageBase64,
-      },
-    };
-
-    await ai.models.generateContent({
-      model,
-      contents: { parts: [imagePart, { text: prompt }] },
-    });
-
-    // In a real scenario with image output support, we'd extract the image here.
-    // For now, we return the original image to avoid "mismatch" errors 
-    // while the analysis provides the "vision".
-    return `data:image/jpeg;base64,${imageBase64}`;
-  } catch (e) {
-    console.error("AI Look generation failed", e);
-    return `data:image/jpeg;base64,${imageBase64}`;
-  }
+  // Speed Optimization: Since standard Gemini models can't generate images yet,
+  // we return original image instantly to avoid Vercel 10s timeout errors.
+  return `data:image/jpeg;base64,${imageBase64}`;
 }
