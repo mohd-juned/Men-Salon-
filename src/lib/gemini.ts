@@ -1,17 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-let aiInstance: GoogleGenAI | null = null;
-
-function getAI() {
-  if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set. If you are on Vercel, please add it to your Environment Variables.");
-    }
-    aiInstance = new GoogleGenAI({ apiKey });
-  }
-  return aiInstance;
-}
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function analyzeFaceAndSuggestStyles(
   imageBase64: string, 
@@ -22,7 +11,6 @@ export async function analyzeFaceAndSuggestStyles(
   recommendedHair: string[];
   recommendedBeard: string[];
 }> {
-  const ai = getAI();
   const model = "gemini-1.5-flash";
   
   const prompt = `
@@ -42,19 +30,16 @@ export async function analyzeFaceAndSuggestStyles(
     },
   };
 
-  const modelInstance = ai.getGenerativeModel({ 
+  const response = await ai.models.generateContent({
     model,
-    generationConfig: {
+    contents: { parts: [imagePart, { text: prompt }] },
+    config: {
       responseMimeType: "application/json",
     }
   });
 
-  const result = await modelInstance.generateContent([prompt, imagePart]);
-  const response = await result.response;
-  const text = response.text();
-
   try {
-    const data = JSON.parse(text || "{}");
+    const data = JSON.parse(response.text || "{}");
     return {
       suggestions: data.analysis || "No analysis available.",
       recommendedHair: data.hairRecommendations || [],
@@ -63,9 +48,9 @@ export async function analyzeFaceAndSuggestStyles(
   } catch (e) {
     console.error("Failed to parse Gemini response", e);
     return {
-      suggestions: "Face shape looks balanced! Try a textured crop or mid fade.",
-      recommendedHair: ["Mid Fade", "Textured Crop"],
-      recommendedBeard: ["Short Stubble"],
+      suggestions: response.text || "Analysis complete.",
+      recommendedHair: [],
+      recommendedBeard: [],
     };
   }
 }
@@ -75,7 +60,6 @@ export async function generateGroomedLook(
   haircut: string,
   beard: string
 ): Promise<string> {
-  // Speed Optimization: Since standard Gemini models can't generate images yet,
-  // we return original image instantly to avoid Vercel 10s timeout errors.
+  // Direct base64 return as a stable fallback when image generation is not available
   return `data:image/jpeg;base64,${imageBase64}`;
 }

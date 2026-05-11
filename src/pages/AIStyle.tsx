@@ -52,55 +52,11 @@ export default function AIStyle() {
     try {
       const base64 = image.split(',')[1];
       
-      let analysisData;
-      let newLook;
-
-      // Detection: Use Proxy for Vercel/External, Direct for AI Studio Preview
-      const isExternal = !window.location.hostname.includes('asia-east1.run.app') && 
-                         !window.location.hostname.includes('googleusercontent.com') &&
-                         !window.location.hostname.includes('webcontainer.io') &&
-                         !window.location.hostname.includes('localhost');
-
-      if (isExternal) {
-        // Vercel/Railway Proxy
-        const response = await fetch('/api/groom', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageBase64: base64,
-            haircut: selectedHair,
-            beard: selectedBeard || 'Clean Shave'
-          })
-        });
-
-        if (!response.ok) {
-          let errorMsg = `Server Error (${response.status})`;
-          try {
-            const json = await response.json();
-            errorMsg = json.error || errorMsg;
-          } catch (e) {
-            // Not JSON (could be Vercel timeout page)
-            if (response.status === 504) errorMsg = "Vercel Timeout: Image too large or AI took too long. Try a smaller photo.";
-          }
-          
-          if (errorMsg.includes('GEMINI_API_KEY')) {
-            throw new Error('Vercel Config Error: GEMINI_API_KEY is not set on your Vercel Dashboard.');
-          }
-          throw new Error(errorMsg);
-        }
-
-        const data = await response.json();
-        analysisData = data.analysis;
-        newLook = data.groomedImage;
-      } else {
-        // Direct call (uses keys injected by AI Studio environment)
-        const [analysis, look] = await Promise.all([
-          analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
-          generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
-        ]);
-        analysisData = analysis;
-        newLook = look;
-      }
+      // Direct call (uses keys injected by environment)
+      const [analysisData, newLook] = await Promise.all([
+        analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
+        generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
+      ]);
 
       setResults(analysisData);
       setGroomedImage(newLook);
@@ -271,10 +227,17 @@ export default function AIStyle() {
                             </div>
                           )}
                           <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-charcoal via-charcoal/80 to-transparent">
-                             <div className="space-y-1">
-                                <p className="text-[9px] font-bold text-gold uppercase tracking-[0.5em]">Vision Confirmed</p>
-                                <h4 className="text-3xl font-black italic uppercase tracking-tighter leading-none">{selectedHair}</h4>
-                                <p className="text-xs font-medium text-white/60 tracking-widest mt-1">{selectedBeard || 'Clean Shave'}</p>
+                             <div className="space-y-4">
+                                <div className="space-y-1">
+                                   <p className="text-[9px] font-bold text-gold uppercase tracking-[0.5em]">Vision Confirmed</p>
+                                   <h4 className="text-3xl font-black italic uppercase tracking-tighter leading-none">{selectedHair}</h4>
+                                   <p className="text-xs font-medium text-white/60 tracking-widest mt-1">{selectedBeard || 'Clean Shave'}</p>
+                                </div>
+                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                   <p className="text-[10px] text-white/80 leading-relaxed italic">
+                                     {results?.suggestions || "AI analysis complete."}
+                                   </p>
+                                </div>
                              </div>
                           </div>
                        </div>
