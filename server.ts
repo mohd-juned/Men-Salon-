@@ -28,7 +28,7 @@ async function startServer() {
       console.log(`Processing grooming: ${haircut} + ${beard}`);
 
       // Dynamically import the gemini lib to access API key on server
-      const { analyzeFaceAndSuggestStyles, generateGroomedLook } = await import("./src/lib/gemini.js");
+      const { analyzeFaceAndSuggestStyles, generateGroomedLook } = await import("./src/lib/gemini");
 
       // Run AI tasks
       const [analysisData, newLook] = await Promise.all([

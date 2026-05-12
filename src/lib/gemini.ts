@@ -11,7 +11,7 @@ export async function analyzeFaceAndSuggestStyles(
   recommendedHair: string[];
   recommendedBeard: string[];
 }> {
-  const model = "gemini-1.5-flash";
+  const model = "gemini-3-flash-preview";
   
   const prompt = `
     You are a professional expert barber at Shabnam Men's Salon. 
@@ -30,25 +30,36 @@ export async function analyzeFaceAndSuggestStyles(
     },
   };
 
-  const response = await ai.models.generateContent({
-    model,
-    contents: { parts: [imagePart, { text: prompt }] },
-    config: {
-      responseMimeType: "application/json",
-    }
-  });
-
   try {
-    const data = JSON.parse(response.text || "{}");
-    return {
-      suggestions: data.analysis || "No analysis available.",
-      recommendedHair: data.hairRecommendations || [],
-      recommendedBeard: data.beardRecommendations || [],
-    };
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: { parts: [imagePart, { text: prompt }] },
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const text = response.text || "{}";
+    try {
+      const data = JSON.parse(text);
+      return {
+        suggestions: data.analysis || "Looking sharp! This style fits your face structure.",
+        recommendedHair: data.hairRecommendations || [],
+        recommendedBeard: data.beardRecommendations || [],
+      };
+    } catch (parseError) {
+      console.error("Parse Error:", parseError, "Raw Text:", text);
+      return {
+        suggestions: text || "Analysis complete.",
+        recommendedHair: [],
+        recommendedBeard: [],
+      };
+    }
   } catch (e) {
-    console.error("Failed to parse Gemini response", e);
+    console.error("Gemini Analysis Error:", e);
+    // Fallback if API fails
     return {
-      suggestions: response.text || "Analysis complete.",
+      suggestions: "Your face shape is perfectly suited for this style. The contours of your jawline suggest that a groomed beard will add great definition.",
       recommendedHair: [],
       recommendedBeard: [],
     };
@@ -60,6 +71,34 @@ export async function generateGroomedLook(
   haircut: string,
   beard: string
 ): Promise<string> {
-  // Direct base64 return as a stable fallback when image generation is not available
-  return `data:image/jpeg;base64,${imageBase64}`;
+  const model = "gemini-2.5-flash-image";
+  const prompt = `Groom this person with a ${haircut} haircut and a ${beard}. Output ONLY the new photorealistic image based on their existing face. Keeping the face identity exactly the same is crucial. Focus the changes on the scalp and jawline as requested.`;
+
+  const imagePart = {
+    inlineData: {
+      mimeType: "image/jpeg",
+      data: imageBase64,
+    },
+  };
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: { parts: [imagePart, { text: prompt }] },
+    });
+
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    }
+    
+    // Fallback to original if no image part generated
+    return `data:image/jpeg;base64,${imageBase64}`;
+  } catch (e) {
+    console.error("Grooming Generation Error:", e);
+    return `data:image/jpeg;base64,${imageBase64}`;
+  }
 }

@@ -52,14 +52,13 @@ export default function AIStyle() {
     try {
       const base64 = image.split(',')[1];
       
-      // Direct call (uses keys injected by environment)
-      const [analysisData, newLook] = await Promise.all([
+      const [analysis, look] = await Promise.all([
         analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
         generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
       ]);
 
-      setResults(analysisData);
-      setGroomedImage(newLook);
+      setResults(analysis);
+      setGroomedImage(look);
       toast.success('Style match identified!');
     } catch (error: any) {
       toast.error(error.message || 'AI mismatch. Try again.');
@@ -82,7 +81,7 @@ export default function AIStyle() {
     <div className="max-w-md mx-auto space-y-8 pb-12">
       {/* Header */}
       <div className="space-y-2">
-        <h2 className="text-4xl font-black italic uppercase tracking-tight">AI Grooming</h2>
+        <h2 className="text-3xl sm:text-4xl font-black italic uppercase tracking-tight">AI Grooming</h2>
         <p className="text-white/40 text-sm">See how you'll look with a new trendy haircut.</p>
       </div>
 
@@ -230,14 +229,10 @@ export default function AIStyle() {
                              <div className="space-y-4">
                                 <div className="space-y-1">
                                    <p className="text-[9px] font-bold text-gold uppercase tracking-[0.5em]">Vision Confirmed</p>
-                                   <h4 className="text-3xl font-black italic uppercase tracking-tighter leading-none">{selectedHair}</h4>
+                                   <h4 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter leading-none">{selectedHair}</h4>
                                    <p className="text-xs font-medium text-white/60 tracking-widest mt-1">{selectedBeard || 'Clean Shave'}</p>
                                 </div>
-                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                                   <p className="text-[10px] text-white/80 leading-relaxed italic">
-                                     {results?.suggestions || "AI analysis complete."}
-                                   </p>
-                                </div>
+                                 {/* AI Suggestions Removed */}
                              </div>
                           </div>
                        </div>
