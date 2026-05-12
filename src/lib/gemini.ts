@@ -46,7 +46,7 @@ export async function analyzeFaceAndSuggestStyles(
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model,
       contents: { parts: [imagePart, { text: prompt }] },
       config: {
         responseMimeType: "application/json",
@@ -85,8 +85,8 @@ export async function generateGroomedLook(
   haircut: string,
   beard: string
 ): Promise<string> {
-  const model = "gemini-2.5-flash-image";
-  const prompt = `Groom this person with a ${haircut} haircut and a ${beard}. Output ONLY the new photorealistic image based on their existing face. Keeping the face identity exactly the same is crucial. Focus the changes on the scalp and jawline as requested.`;
+  const model = "gemini-3.1-flash-image-preview";
+  const prompt = `Groom the person in this image with a ${haircut} haircut and a ${beard} facial hair style. Maintain the person's facial features and identity perfectly. The output must be a single photorealistic, high-quality image of the person with the requested grooming. This is for a professional salon preview.`;
 
   const imagePart = {
     inlineData: {
@@ -99,6 +99,12 @@ export async function generateGroomedLook(
     const response = await ai.models.generateContent({
       model,
       contents: { parts: [imagePart, { text: prompt }] },
+      config: {
+        imageConfig: {
+          aspectRatio: "1:1",
+          imageSize: "1K"
+        }
+      }
     });
 
     if (response.candidates?.[0]?.content?.parts) {
@@ -109,10 +115,34 @@ export async function generateGroomedLook(
       }
     }
     
-    // Fallback to original if no image part generated
+    // If we get here and there's text, it might be a refusal or clarification
+    const textPart = response.text;
+    if (textPart) {
+      console.warn("Grooming model returned text instead of image:", textPart);
+    }
+    
     return `data:image/jpeg;base64,${imageBase64}`;
-  } catch (e) {
+  } catch (e: any) {
     console.error("Grooming Generation Error:", e);
+    // If it's a 404, maybe this model isn't available to the user's key yet
+    if (e.message?.includes("404") || e.status === 404) {
+       // Try fallback to 2.5
+       try {
+         const fallbackResponse = await ai.models.generateContent({
+           model: "gemini-2.5-flash-image",
+           contents: { parts: [imagePart, { text: prompt }] }
+         });
+         if (fallbackResponse.candidates?.[0]?.content?.parts) {
+           for (const part of fallbackResponse.candidates[0].content.parts) {
+             if (part.inlineData) {
+               return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+             }
+           }
+         }
+       } catch (innerE) {
+         console.error("Fallback grooming also failed:", innerE);
+       }
+    }
     return `data:image/jpeg;base64,${imageBase64}`;
   }
 }
