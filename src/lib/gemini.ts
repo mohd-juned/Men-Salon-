@@ -1,6 +1,20 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getApiKey = () => {
+  // Check for AI Studio environment variable (process.env is available in that preview environment)
+  try {
+    if (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) {
+      return process.env.GEMINI_API_KEY;
+    }
+  } catch (e) {
+    // process.env might throw in some environments if strictly handled
+  }
+
+  // Check for Vite/Netlify environment variable (standard way for Vite apps)
+  return (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export async function analyzeFaceAndSuggestStyles(
   imageBase64: string, 
