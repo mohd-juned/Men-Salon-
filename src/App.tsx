@@ -177,6 +177,13 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard config={salonConfig} isAdmin={isAdmin} />} />
           </Routes>
         </main>
+
+        {/* Developer Signature */}
+        <footer className="py-8 px-4 text-center">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-white/20 font-bold">
+            website develop by <span className="text-gold/40">Juned</span>
+          </p>
+        </footer>
       </div>
     </BrowserRouter>
   );
