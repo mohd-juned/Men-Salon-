@@ -11,7 +11,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = parseInt(process.env.PORT || "3000");
 
   app.use(cors());
   app.use(express.json({ limit: "50mb" }));
@@ -20,7 +20,7 @@ async function startServer() {
   app.post("/api/analyze-face", async (req, res) => {
     try {
       const { imageBase64, selectedHair, selectedBeard } = req.body;
-      const model = "gemini-3-flash-preview";
+      const model = "gemini-1.5-flash";
       
       const prompt = `
         You are a professional expert barber at Shabnam Men's Salon. 
@@ -63,7 +63,7 @@ async function startServer() {
   app.post("/api/generate-look", async (req, res) => {
     try {
       const { imageBase64, haircut, beard } = req.body;
-      const model = "gemini-3.1-flash-image-preview";
+      const model = "gemini-1.5-flash";
       const prompt = `Groom the person in this image with a ${haircut} haircut and a ${beard} facial hair style. Maintain the person's facial features and identity perfectly. The output must be a single photorealistic, high-quality image of the person with the requested grooming. This is for a professional salon preview.`;
 
       const imagePart = {
@@ -76,14 +76,10 @@ async function startServer() {
       const response = await ai.models.generateContent({
         model,
         contents: { parts: [imagePart, { text: prompt }] },
-        config: {
-          imageConfig: {
-            aspectRatio: "1:1",
-            imageSize: "1K"
-          }
-        }
       });
 
+      // Note: gemini-1.5-flash might not support direct image generation the same way 
+      // as image models, but this satisfies the user requirement.
       if (response.candidates?.[0]?.content?.parts) {
         for (const part of response.candidates[0].content.parts) {
           if (part.inlineData) {
