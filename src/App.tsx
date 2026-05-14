@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db, auth, googleProvider } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { Scissors, Calendar, MapPin, Sparkles, LayoutDashboard, LogIn, LogOut, Menu, X, Clock } from 'lucide-react';
@@ -27,7 +27,44 @@ export default function App() {
 
     const unsubscribeConfig = onSnapshot(doc(db, 'salon', 'config'), (docSnap) => {
       if (docSnap.exists()) {
-        setSalonConfig(docSnap.data() as SalonConfig);
+        const data = docSnap.data() as SalonConfig;
+        
+        // Handle Auto Status logic
+        if (data.autoStatus && data.openingHours) {
+          try {
+            const now = new Date();
+            const [start, end] = data.openingHours.split(' - ').map(t => {
+              const [time, modifier] = t.split(' ');
+              let [hours, minutes] = time.split(':').map(Number);
+              if (modifier === 'PM' && hours < 12) hours += 12;
+              if (modifier === 'AM' && hours === 12) hours = 0;
+              const d = new Date();
+              d.setHours(hours, minutes || 0, 0, 0);
+              return d;
+            });
+            
+            const isOpen = now >= start && now <= end;
+            data.status = isOpen ? 'open' : 'closed';
+          } catch (e) {
+            console.error("Auto status calc failed", e);
+          }
+        }
+        
+        setSalonConfig(data);
+      } else {
+        // Initial setup for first time
+        const defaultConfig: SalonConfig = {
+          status: 'open',
+          openingHours: '10:00 AM - 9:00 PM',
+          address: 'Main market Pahasu 203396',
+          phone: '+91 00000 00000',
+          photoUrl: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop',
+          gallery: []
+        };
+        setDoc(doc(db, 'salon', 'config'), {
+          ...defaultConfig,
+          lastUpdated: serverTimestamp()
+        }).catch(err => console.error("Initial config fail:", err));
       }
     });
 
@@ -135,10 +172,9 @@ export default function App() {
           </Routes>
         </main>
 
-        {/* Developer Signature */}
-        <footer className="py-8 px-4 text-center">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-white/20 font-bold">
-            website develop by <span className="text-gold/40">Juned</span>
+        <footer className="text-center py-12 border-t border-white/5">
+          <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-medium">
+            Website design by <span className="text-gold/60 font-bold">Juned</span>
           </p>
         </footer>
       </div>

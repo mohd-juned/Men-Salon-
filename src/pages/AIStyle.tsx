@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Sparkles, RefreshCw, Scissors, User, Zap, Download } from 'lucide-react';
+import { Camera, Sparkles, RefreshCw, Scissors, User, Zap, ChevronRight, Download } from 'lucide-react';
 import { analyzeFaceAndSuggestStyles, generateGroomedLook } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -45,6 +45,7 @@ export default function AIStyle() {
     setIsAnalyzing(true);
     setScanProgress(0);
     
+    // Smooth progress animation for visual "generation" effect
     const interval = setInterval(() => {
       setScanProgress(p => p < 98 ? p + 2 : p);
     }, 100);
@@ -52,16 +53,17 @@ export default function AIStyle() {
     try {
       const base64 = image.split(',')[1];
       
-      const [analysis, look] = await Promise.all([
+      // Parallel execution for faster result
+      const [analysisData, newLook] = await Promise.all([
         analyzeFaceAndSuggestStyles(base64, selectedHair!, selectedBeard || 'Clean Shave'),
         generateGroomedLook(base64, selectedHair!, selectedBeard || 'Clean Shave')
       ]);
 
-      setResults(analysis);
-      setGroomedImage(look);
+      setResults(analysisData);
+      setGroomedImage(newLook);
       toast.success('Style match identified!');
-    } catch (error: any) {
-      toast.error(error.message || 'AI mismatch. Try again.');
+    } catch (error) {
+      toast.error('AI mismatch. Try again.');
       console.error(error);
     } finally {
       clearInterval(interval);
@@ -81,7 +83,7 @@ export default function AIStyle() {
     <div className="max-w-md mx-auto space-y-8 pb-12">
       {/* Header */}
       <div className="space-y-2">
-        <h2 className="text-3xl sm:text-4xl font-black italic uppercase tracking-tight">AI Grooming</h2>
+        <h2 className="text-4xl font-black italic uppercase tracking-tight">AI Grooming</h2>
         <p className="text-white/40 text-sm">See how you'll look with a new trendy haircut.</p>
       </div>
 
@@ -226,13 +228,10 @@ export default function AIStyle() {
                             </div>
                           )}
                           <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-charcoal via-charcoal/80 to-transparent">
-                             <div className="space-y-4">
-                                <div className="space-y-1">
-                                   <p className="text-[9px] font-bold text-gold uppercase tracking-[0.5em]">Vision Confirmed</p>
-                                   <h4 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter leading-none">{selectedHair}</h4>
-                                   <p className="text-xs font-medium text-white/60 tracking-widest mt-1">{selectedBeard || 'Clean Shave'}</p>
-                                </div>
-                                 {/* AI Suggestions Removed */}
+                             <div className="space-y-1">
+                                <p className="text-[9px] font-bold text-gold uppercase tracking-[0.5em]">Vision Confirmed</p>
+                                <h4 className="text-3xl font-black italic uppercase tracking-tighter leading-none">{selectedHair}</h4>
+                                <p className="text-xs font-medium text-white/60 tracking-widest mt-1">{selectedBeard || 'Clean Shave'}</p>
                              </div>
                           </div>
                        </div>

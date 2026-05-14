@@ -1,22 +1,26 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-
-const MODEL = "gemini-3.1-flash-lite";
-const IMAGE_MODEL = "gemini-2.5-flash-image";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function analyzeFaceAndSuggestStyles(
   imageBase64: string, 
   selectedHair?: string, 
   selectedBeard?: string
-) {
+): Promise<{
+  suggestions: string;
+  recommendedHair: string[];
+  recommendedBeard: string[];
+}> {
+  const model = "gemini-3-flash-preview";
+  
   const prompt = `
     You are a professional expert barber at Shabnam Men's Salon. 
     The user is considering a "${selectedHair || 'default'}" haircut and "${selectedBeard || 'default'}" beard style.
-    Analyze their face photo and tell them how this combination will look.
-    Be encouraging, professional, and explain why it suits their face shape.
+    Analyze their face photo and tell them exactly how this specific combination will look on them.
+    Be encouraging, professional, and explain why it suits their face shape (or suggest minor tweaks to the style to make it better).
     
     Structure the response as JSON with keys: "analysis", "hairRecommendations", "beardRecommendations".
+    Leave hairRecommendations and beardRecommendations as empty arrays if you only have one main recommendation.
   `;
 
   const imagePart = {
@@ -26,36 +30,27 @@ export async function analyzeFaceAndSuggestStyles(
     },
   };
 
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: { parts: [imagePart, { text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
-    
-    let data;
-    try {
-      data = JSON.parse(response.text || "{}");
-    } catch (e) {
-      data = { analysis: response.text || "Looking sharp!" };
+  const response = await ai.models.generateContent({
+    model,
+    contents: { parts: [imagePart, { text: prompt }] },
+    config: {
+      responseMimeType: "application/json",
     }
+  });
 
+  try {
+    const data = JSON.parse(response.text || "{}");
     return {
-      suggestions: data.analysis || "Looking sharp!",
+      suggestions: data.analysis || "No analysis available.",
       recommendedHair: data.hairRecommendations || [],
       recommendedBeard: data.beardRecommendations || [],
     };
-  } catch (error: any) {
-    console.error("Gemini Analysis Error:", error);
-    if (error.message?.includes('403') || error.status === 403) {
-      throw new Error("API Permission Denied. Please check your Gemini API key in Settings > Secrets or choose a Different model.");
-    }
+  } catch (e) {
+    console.error("Failed to parse Gemini response", e);
     return {
-      suggestions: "Looking sharp! This style fits your face structure.",
-      recommendedHair: [],
-      recommendedBeard: [],
+      suggestions: "Face shape looks balanced! Try a textured crop or mid fade.",
+      recommendedHair: ["Mid Fade", "Textured Crop"],
+      recommendedBeard: ["Short Stubble"],
     };
   }
 }
@@ -65,7 +60,16 @@ export async function generateGroomedLook(
   haircut: string,
   beard: string
 ): Promise<string> {
-  const prompt = `Groom the person in this image with a ${haircut} haircut and a ${beard} style. Maintain the person's facial features and identity perfectly. This is for a professional salon preview. The output MUST be a new image.`;
+  // Use gemini-2.5-flash-image for image editing/generation
+  const model = "gemini-2.5-flash-image";
+  
+  const prompt = `
+    Apply a professional grooming transformation to this person's photo.
+    Change their hairstyle to a "${haircut}" and their beard to "${beard}".
+    MAINTAIN THEIR ORIGINAL FACE, FEATURES, AND SKIN TONE.
+    The transformation must look photorealistic and seamless, as if they just had a haircut at a premium salon.
+    Preserve same lighting and background. Result must be ONLY the modified image.
+  `;
 
   const imagePart = {
     inlineData: {
@@ -74,28 +78,20 @@ export async function generateGroomedLook(
     },
   };
 
-  try {
-    const response = await ai.models.generateContent({
-      model: IMAGE_MODEL,
-      contents: { parts: [imagePart, { text: prompt }] },
-      config: {
-        imageConfig: {
-          aspectRatio: "1:1"
-        }
-      }
-    });
+  const response = await ai.models.generateContent({
+    model,
+    contents: { parts: [imagePart, { text: prompt }] },
+  });
 
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-        }
-      }
+  // Extract the image from candidates
+  const parts = response.candidates?.[0]?.content?.parts;
+  if (!parts) throw new Error("No response from AI");
+
+  for (const part of parts) {
+    if (part.inlineData?.data) {
+      return `data:image/png;base64,${part.inlineData.data}`;
     }
-    
-    return `data:image/jpeg;base64,${imageBase64}`; 
-  } catch (e: any) {
-    console.error("Grooming Generation Error:", e);
-    return `data:image/jpeg;base64,${imageBase64}`;
   }
+
+  throw new Error("No image was generated");
 }
