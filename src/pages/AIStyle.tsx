@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Camera, Sparkles, RefreshCw, Scissors, User, Zap, Download } from 'lucide-react';
-import { analyzeFaceAndSuggestStyles, generateGroomedLook } from '../services/api';
+import { analyzeFaceAndSuggestStyles, generateGroomedLook } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
 import { compressImage } from '../lib/utils';

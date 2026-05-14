@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db, auth, googleProvider } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { Scissors, Calendar, MapPin, Sparkles, LayoutDashboard, LogIn, LogOut, Menu, X, Clock } from 'lucide-react';
@@ -27,50 +27,7 @@ export default function App() {
 
     const unsubscribeConfig = onSnapshot(doc(db, 'salon', 'config'), (docSnap) => {
       if (docSnap.exists()) {
-        const data = docSnap.data() as SalonConfig;
-        
-        // Final address fix for the salon owner
-        if (data.address && (data.address.includes('Okhla') || data.address.includes('Pahasu 203396') || data.address.includes('Plot No. 123'))) {
-          data.address = 'Main market Pahasu 200396';
-        }
-
-        // Handle Auto Status logic
-        if (data.autoStatus && data.openingHours) {
-          try {
-            const now = new Date();
-            const [start, end] = data.openingHours.split(' - ').map(t => {
-              const [time, modifier] = t.split(' ');
-              let [hours, minutes] = time.split(':').map(Number);
-              if (modifier === 'PM' && hours < 12) hours += 12;
-              if (modifier === 'AM' && hours === 12) hours = 0;
-              const d = new Date();
-              d.setHours(hours, minutes || 0, 0, 0);
-              return d;
-            });
-            
-            const isOpen = now >= start && now <= end;
-            data.status = isOpen ? 'open' : 'closed';
-          } catch (e) {
-            console.error("Auto status calc failed", e);
-          }
-        }
-        
-        setSalonConfig(data);
-      } else {
-        // Initial setup for first time
-        const defaultConfig: SalonConfig = {
-          status: 'open',
-          openingHours: '10:00 AM - 9:00 PM',
-          address: 'Main market Pahasu 200396',
-          phone: '+91 00000 00000',
-          photoUrl: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop',
-          gallery: []
-        };
-        setDoc(doc(db, 'salon', 'config'), {
-          ...defaultConfig,
-          lastUpdated: serverTimestamp()
-        }).catch(err => console.error("Initial config fail:", err));
-        setSalonConfig(defaultConfig);
+        setSalonConfig(docSnap.data() as SalonConfig);
       }
     });
 
