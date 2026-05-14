@@ -2,8 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Shabnam Men's Salon</title>
+    
+    <!-- PWA & Mobile Optimization -->
+    <meta name="theme-color" content="#D4AF37" />
+    <meta name="description" content="Premium Men's Salon with AI Styling" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Apple/iOS Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Shabnam Salon" />
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/D4AF37/000000/png?text=Shabnam" />
+    
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('Service Worker registered:', reg))
+            .catch(err => console.log('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
